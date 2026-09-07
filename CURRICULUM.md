@@ -1,8 +1,8 @@
 # Curriculum — the tensor ladder
 
-Step 1 is **implemented** in code and lessons.  Steps 2–N are **outlines only**
-(no implementation yet).  Each step lists prerequisites, learning goals, and
-the mathematical objects that will appear in a future package release.
+Steps 1–2 are **implemented** in code and lessons.  Steps 3–N are **outlines
+only** (no implementation yet).  Each step lists prerequisites, learning goals,
+and the mathematical objects that will appear in a future package release.
 
 ---
 
@@ -25,15 +25,41 @@ the mathematical objects that will appear in a future package release.
 
 ---
 
-## Step 2 — Multilinear algebra & (p,q) tensors *(outline)*
+## Step 2 — Dual spaces (deep) *(implemented)*
 
 **Prerequisites:** Step 1.
 
 **Goals:**
 
+- Dual basis \(\varepsilon^i\) dual to \(e_i\): \(\varepsilon^i(e_j)=\delta^i_j\);
+  reconstruct \(v = \varepsilon^i(v)\, e_i\) and \(\omega = \omega(e_i)\,\varepsilon^i\)
+- Bidual \(V^{**}\) and the **natural embedding** \(\iota: V\to V^{**}\),
+  \(\iota(v)(\omega)=\omega(v)\); finite-dimensional isomorphism; naturality
+  under change of basis
+- Dual of a linear map: if \(A: V\to W\), then \(A^*: W^*\to V^*\),
+  \((A^*\eta)(v)=\eta(A v)\); matrix of \(A^*\) is the transpose (in dual bases)
+- Annihilator of a subspace: \(U^0 = \{\omega\in V^*:\omega|_U=0\}\); dimension
+  formula \(\dim U^0 = \dim V - \dim U\)
+- Light bridge: nondegenerate bilinear form induces musical isomorphisms
+  \(V\cong V^*\) via flat ♭ / sharp ♯
+
+**Code:** `DualBasis`, `dual_basis`, `reconstruct_vector`, `reconstruct_covector`,
+`natural_embedding`, `BidualElement`, `annihilator`, `annihilator_dim`,
+`LinearMap`, `BilinearForm.sharp`.
+
+**Lesson:** `lessons/step02_dual_spaces.md`
+
+---
+
+## Step 3 — Multilinear algebra & (p,q) tensors *(outline)*
+
+**Prerequisites:** Steps 1–2.
+
+**Goals:**
+
 - Define \((p,q)\)-tensors as multilinear maps \((V^*)^p \times V^q \to \mathbb{R}\)
 - Tensor product, contraction, symmetries (sym / skew)
-- Raising and lowering with a non-degenerate metric
+- Raising and lowering with a non-degenerate metric (full mixed-tensor API)
 - Fully general change-of-basis for mixed tensors:
   \[
   T'^{i_1\ldots i_p}{}_{j_1\ldots j_q}
@@ -41,13 +67,13 @@ the mathematical objects that will appear in a future package release.
     T^{a_1\ldots}{}_{b_1\ldots}
   \]
 
-**Future modules:** `tensor_product`, `contract`, `musical_isomorphisms`.
+**Future modules:** `tensor_product`, `contract`, extended musical isomorphisms.
 
 ---
 
-## Step 3 — Manifolds & tangent spaces *(outline)*
+## Step 4 — Manifolds & tangent spaces *(outline)*
 
-**Prerequisites:** Steps 1–2; multivariable calculus.
+**Prerequisites:** Steps 1–3; multivariable calculus.
 
 **Goals:**
 
@@ -61,9 +87,9 @@ the mathematical objects that will appear in a future package release.
 
 ---
 
-## Step 4 — Riemannian / Lorentzian metrics *(outline)*
+## Step 5 — Riemannian / Lorentzian metrics *(outline)*
 
-**Prerequisites:** Step 3.
+**Prerequisites:** Step 4.
 
 **Goals:**
 
@@ -76,9 +102,9 @@ the mathematical objects that will appear in a future package release.
 
 ---
 
-## Step 5 — Connections & Christoffel symbols *(outline)*
+## Step 6 — Connections & Christoffel symbols *(outline)*
 
-**Prerequisites:** Step 4.
+**Prerequisites:** Step 5.
 
 **Goals:**
 
@@ -97,9 +123,9 @@ the mathematical objects that will appear in a future package release.
 
 ---
 
-## Step 6 — Curvature *(outline)*
+## Step 7 — Curvature *(outline)*
 
-**Prerequisites:** Step 5.
+**Prerequisites:** Step 6.
 
 **Goals:**
 
@@ -112,9 +138,9 @@ the mathematical objects that will appear in a future package release.
 
 ---
 
-## Step 7 — Einstein equation *(outline)*
+## Step 8 — Einstein equation *(outline)*
 
-**Prerequisites:** Step 6; stress-energy as a symmetric \((0,2)\) tensor.
+**Prerequisites:** Step 7; stress-energy as a symmetric \((0,2)\) tensor.
 
 **Goals:**
 
@@ -128,7 +154,7 @@ pedagogical, not a full GR simulator.
 
 ---
 
-## Step 8+ — Optional extensions *(outline)*
+## Step 9+ — Optional extensions *(outline)*
 
 - Differential forms, exterior derivative, Stokes
 - Hodge dual; Maxwell in form language
@@ -139,7 +165,8 @@ pedagogical, not a full GR simulator.
 
 ## Design principles (all steps)
 
-1. **NumPy only** unless a later step explicitly justifies otherwise.
+1. **NumPy only** for numerics unless a later step explicitly justifies otherwise
+   (Jupyter is an optional teaching frontend, not a math dependency).
 2. **Objects before index soup** — then show indices as efficient notation.
 3. **Invariants first** — every transform demo checks a scalar pairing.
 4. **Lessons + examples + tests** for each implemented step.
