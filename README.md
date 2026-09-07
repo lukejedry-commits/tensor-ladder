@@ -77,11 +77,11 @@ print(A.dual_matrix())  # transpose
 | Topic | Role on the ladder |
 |-------|--------------------|
 | Scalars (0-tensors) | Invariants; what contractions produce |
-| Vectors (1,0) | Contravariant components; transform with \(P^{-1}\) |
-| Covectors (0,1) | Linear functionals; transform with \(P\) |
-| Bilinear forms (0,2) | Motivate the metric \(g_{\mu\nu}\); ♭ / ♯ |
-| Dual bases & bidual | \(\varepsilon^i\), \(\iota:V\to V^{**}\), annihilators |
-| Dual of a linear map | \(A^*\); matrix = transpose |
+| Vectors (1,0) | Contravariant components; transform with $P^{-1}$ |
+| Covectors (0,1) | Linear functionals; transform with $P$ |
+| Bilinear forms (0,2) | Motivate the metric $g_{\mu\nu}$; ♭ / ♯ |
+| Dual bases & bidual | $\varepsilon^i$, $\iota:V\to V^{**}$, annihilators |
+| Dual of a linear map | $A^*$; matrix = transpose |
 | Index notation | Bookkeeping for free/dummy indices |
 | Change of basis | Why “co-” vs “contra-” exist |
 
