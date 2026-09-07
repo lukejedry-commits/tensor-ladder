@@ -11,8 +11,8 @@ exercises at the end.
 A **scalar** is a single real number that does not depend on a choice of
 basis.  In index language it has **no free indices**.
 
-Examples: a temperature reading; the number \(\omega(v)\) obtained by feeding
-a vector into a covector; \(\operatorname{tr}(A)\) for an endomorphism.
+Examples: a temperature reading; the number $\omega(v)$ obtained by feeding
+a vector into a covector; $\operatorname{tr}(A)$ for an endomorphism.
 
 Under a change of basis, nothing multiplies a scalar — the “empty product”
 of transformation matrices.  That is why true scalars are safe observables
@@ -28,11 +28,12 @@ assert float(s) == 3.14
 
 ## 2. Vectors — contravariant components
 
-Fix a finite-dimensional real vector space, $V$ , with ordered basis $e_1,\ldots,e_n$ . Any vector $v \in V$ expands uniquely as
+Fix a finite-dimensional real vector space $V$ with ordered basis
+$\{e_1,\ldots,e_n\}$.  Any vector $v\in V$ expands uniquely as
 
 $$
 v = v^i\, e_i
-\quad\text{(Einstein sum on } i\text{)}
+\quad\text{(Einstein sum on } i\text{)}.
 $$
 
 The numbers $v^i$ are the **contravariant components** of $v$ in that
@@ -40,10 +41,9 @@ basis.  We write the index **up**.
 
 ### Why “contra-”?
 
-Suppose we stretch every basis vector by a factor of 2: $\tilde{e}_i = 2 e_i$.
+Suppose we stretch every basis vector by a factor of 2: $e'_i = 2 e_i$.
 The *geometric* arrow $v$ is unchanged, so its components must **halve**:
-$${\tilde{v}}^{i} = \frac{v^i}{2}$$
-Components transform *contrary* to the basis.
+$v'^i = v^i / 2$.  Components transform *contrary* to the basis.
 
 In code:
 
@@ -57,20 +57,25 @@ v = Vector.from_iterable([3.0, 4.0], e)
 
 ## 3. Covectors — dual vectors / 1-forms
 
-The **dual space** $V^*$ is the set of linear maps $\left(\omega: V\to\mathbb{R}\right)$.
+The **dual space** $V^*$ is the set of linear maps $\omega: V\to\mathbb{R}$.
 Elements of $V^*$ are **covectors** (also: dual vectors, 1-forms).
 
-Given $e_i$, the **dual basis** $\left(\varepsilon^i \subset V^*\right)$ is defined by
+Given $\{e_i\}$, the **dual basis** $\{\varepsilon^i\}\subset V^*$ is defined by
 
-$$\varepsilon^i(e_j) = \delta^i_j$$
+$$
+\varepsilon^i(e_j) = \delta^i_j.
+$$
 
-Any $\omega\in V^*$ expands as $\omega = \omega_i\,\varepsilon^i$ with $\omega_i = \omega(e_i)$ (index **down**).  Then
+Any $\omega\in V^*$ expands as $\omega = \omega_i\,\varepsilon^i$ with
+$\omega_i = \omega(e_i)$ (index **down**).  Then
 
-$$\omega(v) = {\omega}_{i} v^i$$
+$$
+\omega(v) = \omega_i v^i.
+$$
 
 ### Why “co-”?
 
-Covector components transform *with* the basis $\left(\text{same } P\right)$, so that the
+Covector components transform *with* the basis (same $P$), so that the
 pairing $\omega_i v^i$ stays invariant — see §6.
 
 ```python
@@ -83,7 +88,7 @@ print(ω(v))  # Scalar(11.0)
 
 ## 4. Bilinear forms / (0,2) tensors
 
-A **bilinear form** is a map $\left(B: V\times V\to\mathbb{R}\right)$ linear in each
+A **bilinear form** is a map $B: V\times V\to\mathbb{R}$ linear in each
 slot.  In components,
 
 $$
@@ -122,9 +127,9 @@ print(g.flat(v))        # Covector([3, 4], ...)
 
 Examples:
 
-- $\omega_i v^i$ — $i$ - dummy → scalar  
-- ${T}^{i}_{j} v^j$ — $i$ - free, $j$ - dummy → vector  
-- $g_{ij} v^i w^j$ — $\left(i,j\right)$ - dummy → scalar  
+- $\omega_i v^i$ — $i$ dummy → scalar  
+- $T^i{}_j v^j$ — $i$ free, $j$ dummy → vector  
+- $g_{ij} v^i w^j$ — $i,j$ dummy → scalar  
 
 ```python
 from tensor_ladder import free_and_dummy_indices, einstein_contract
@@ -169,7 +174,7 @@ So the two laws are *forced* if the pairing is geometric (basis-free).
 For a bilinear form,
 
 $$
-{B'}_{k\ell} = {P}^{i}_{k}\, {P}^{j}_{\ell}\, {B}_{ij}
+B'_{kl} = P^i{}_k\, P^j{}_l\, B_{ij}
 \quad\Leftrightarrow\quad
 B' = P^{T} B P.
 $$
@@ -198,7 +203,7 @@ $\mathbb{R}^2$.  Compute $\omega(v)$ by hand and with `Covector`/`Vector`.
 ### Exercise B — Stretch the basis
 
 Using $P = \operatorname{diag}(2, 1)$, compute new components of
-$v = (3, 4)$ and $\omega = (1, 2)$.  Verify ${\omega'}_i {v'}^{\,i} = \omega_i v^i$.
+$v = (3, 4)$ and $\omega = (1, 2)$.  Verify $\omega'_i v'^i = \omega_i v^i$.
 
 ### Exercise C — Free vs dummy
 
@@ -231,9 +236,9 @@ $v' = (3/2,\ 4)$.  $\omega' = P^{T}\omega = (2,\ 2)$.
 Pairing: $2\cdot\tfrac32 + 2\cdot 4 = 3 + 8 = 11$, same as
 $1\cdot 3 + 2\cdot 4 = 11$.
 
-**C.** Dummy: $\left(j,k\right)$.  Free: $i$.  Result is a vector $\left(\text{type }(1,0)\right)$.
+**C.** Dummy: $j,k$.  Free: $i$.  Result is a vector (type $(1,0)$).
 
-**D.** $g\left(v_i\right) = \delta_{ij} v^j = v^i$, so $v^\flat = (3, 4)$ as a covector.
+**D.** $v_i = \delta_{ij} v^j = v^i$, so $v^\flat = (3, 4)$ as a covector.
 (In a non-Euclidean metric these would differ.)
 
 </details>

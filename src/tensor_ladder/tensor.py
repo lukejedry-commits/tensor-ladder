@@ -175,6 +175,22 @@ class BilinearForm:
             raise ValueError("Vector must be in the form's basis.")
         return Covector(self.components @ v.components, self.basis)
 
+    def sharp(self, omega: Covector) -> Vector:
+        """
+        Raise an index: ω ↦ ω♯ with (ω♯)^i = (B^{-1})^{ij} ω_j.
+
+        Requires a non-degenerate form (musical isomorphism "sharp").
+        Inverse to :meth:`flat` when B is non-degenerate.
+        """
+        if not self.is_nondegenerate():
+            raise ValueError("sharp requires a non-degenerate bilinear form.")
+        if omega.dim != self.dim:
+            raise ValueError("Dimension mismatch.")
+        if not np.allclose(omega.basis.vectors, self.basis.vectors):
+            raise ValueError("Covector must be in the form's basis.")
+        raised = np.linalg.solve(self.components, omega.components)
+        return Vector(raised, self.basis)
+
     def in_basis(self, change: ChangeOfBasis) -> BilinearForm:
         """
         Transform (0,2) components: B'_{kl} = P^i_k P^j_l B_{ij},
