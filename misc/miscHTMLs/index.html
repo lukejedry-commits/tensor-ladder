@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Tensor Basis Visualization</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            background: #111;
+            color: #eee;
+            font-family: system-ui, sans-serif;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+
+        #sketch-holder {
+            margin: 10px;
+        }
+
+        #controls {
+            width: 300px;
+            background: #1a1a1a;
+            padding: 14px;
+            border-radius: 8px;
+            margin: 10px;
+            font-size: 14px;
+        }
+
+        .slider-row {
+            margin: 12px 0;
+            display: grid;
+            grid-template-columns: 1fr 70px;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .slider-row label {
+            grid-column: 1 / -1;
+            margin-bottom: 2px;
+            font-size: 13px;
+        }
+
+        .slider-row input[type="range"] {
+            width: 100%;
+        }
+
+        .slider-row input[type="number"] {
+            width: 70px;
+            background: #222;
+            color: #eee;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 2px 4px;
+        }
+
+        .readout {
+            margin-top: 18px;
+            font-size: 13px;
+            line-height: 1.45;
+            background: #222;
+            padding: 8px;
+            border-radius: 6px;
+        }
+
+        .readout span {
+            font-family: monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="sketch-holder"></div>
+    <div id="controls"></div>
+
+    <script>
+        let rotSlider, rotNum, shearSlider, shearNum;
+        let scale1Slider, scale1Num, scale2Slider, scale2Num;
+        let v = [2.2, 1.1]; // fixed geometric vector (components in Basis 1)
+
+        function setup() {
+            const canvas = createCanvas(1000, 700);
+            canvas.parent('sketch-holder');
+            textFont('system-ui');
+
+            const ctrl = select('#controls');
+            ctrl.html(`
+        <div class="slider-row">
+          <label>Rotation (deg)</label>
+          <input type="range" id="rot" min="-180" max="180" value="30" step="1">
+          <input type="number" id="rotN" min="-180" max="180" value="30" step="1">
+        </div>
+        <div class="slider-row">
+          <label>Shear</label>
+          <input type="range" id="shear" min="-1.5" max="1.5" value="0" step="0.01">
+          <input type="number" id="shearN" min="-1.5" max="1.5" value="0" step="0.01">
+        </div>
+        <div class="slider-row">
+          <label>Scale Axis 1</label>
+          <input type="range" id="s1" min="0.3" max="2.5" value="1" step="0.01">
+          <input type="number" id="s1N" min="0.3" max="2.5" value="1" step="0.01">
+        </div>
+        <div class="slider-row">
+          <label>Scale Axis 2</label>
+          <input type="range" id="s2" min="0.3" max="2.5" value="1" step="0.01">
+          <input type="number" id="s2N" min="0.3" max="2.5" value="1" step="0.01">
+        </div>
+        <div class="readout" id="readout"></div>
+      `);
+
+            // bind elements
+            rotSlider = select('#rot');
+            rotNum = select('#rotN');
+            shearSlider = select('#shear');
+            shearNum = select('#shearN');
+            scale1Slider = select('#s1');
+            scale1Num = select('#s1N');
+            scale2Slider = select('#s2');
+            scale2Num = select('#s2N');
+
+            // two-way sync
+            function link(slider, num) {
+                slider.input(() => num.value(slider.value()));
+                num.input(() => slider.value(num.value()));
+            }
+            link(rotSlider, rotNum);
+            link(shearSlider, shearNum);
+            link(scale1Slider, scale1Num);
+            link(scale2Slider, scale2Num);
+        }
+
+        function getLambda() {
+            const θ = radians(float(rotSlider.value()));
+            const sh = float(shearSlider.value());
+            const sx = float(scale1Slider.value());
+            const sy = float(scale2Slider.value());
+
+            const c = cos(θ), s = sin(θ);
+            const rot = [[c, -s], [s, c]];
+            const shear = [[1, sh], [0, 1]];
+            const scale = [[sx, 0], [0, sy]];
+
+            return matMul(rot, matMul(shear, scale));
+        }
+
+        function matMul(A, B) {
+            return [
+                [A[0][0] * B[0][0] + A[0][1] * B[1][0], A[0][0] * B[0][1] + A[0][1] * B[1][1]],
+                [A[1][0] * B[0][0] + A[1][1] * B[1][0], A[1][0] * B[0][1] + A[1][1] * B[1][1]]
+            ];
+        }
+
+        function matInv2(M) {
+            const det = M[0][0] * M[1][1] - M[0][1] * M[1][0];
+            if (abs(det) < 1e-8) return null;
+            return [
+                [M[1][1] / det, -M[0][1] / det],
+                [-M[1][0] / det, M[0][0] / det]
+            ];
+        }
+
+        function apply(M, vec) {
+            return [M[0][0] * vec[0] + M[0][1] * vec[1], M[1][0] * vec[0] + M[1][1] * vec[1]];
+        }
+
+        function drawArrow(base, vec, col, weight = 2) {
+            stroke(col);
+            strokeWeight(weight);
+            const tip = [base[0] + vec[0], base[1] + vec[1]];
+            line(base[0], base[1], tip[0], tip[1]);
+            const ang = atan2(vec[1], vec[0]);
+            const len = 9;
+            push();
+            translate(tip[0], tip[1]);
+            rotate(ang);
+            line(0, 0, -len, -len * 0.45);
+            line(0, 0, -len, len * 0.45);
+            pop();
+        }
+
+        function drawPanel(px, py, w, h, title, drawFn) {
+            push();
+            translate(px, py);
+            noStroke();
+            fill(18);
+            rect(0, 0, w, h);
+
+            drawingContext.save();
+            drawingContext.beginPath();
+            drawingContext.rect(0, 0, w, h);
+            drawingContext.clip();
+
+            translate(w * 0.5, h * 0.58);
+            scale(1, -1);
+
+            drawFn();
+
+            drawingContext.restore();
+
+            resetMatrix();
+            fill(230);
+            noStroke();
+            textSize(14);
+            textAlign(CENTER, TOP);
+            text(title, px + w / 2, py + 8);
+            pop();
+        }
+
+        function draw() {
+            background(10);
+            const Λ = getLambda();
+            const Λinv = matInv2(Λ);
+            const det = Λ[0][0] * Λ[1][1] - Λ[0][1] * Λ[1][0];
+            const v_b2 = Λinv ? apply(Λinv, v) : [0, 0];
+
+            const pw = 480, ph = 330; // viewport size
+
+            // Top-left: Basis 1 + v
+            drawPanel(10, 10, pw, ph, "Basis 1  —  components of v", () => {
+                stroke(70); strokeWeight(1);
+                line(-180, 0, 180, 0); line(0, -130, 0, 130);
+                drawArrow([0, 0], [70, 0], color(80, 140, 255), 2);
+                drawArrow([0, 0], [0, 70], color(80, 140, 255), 2);
+                drawArrow([0, 0], [v[0] * 32, v[1] * 32], color(180, 100, 255), 3);
+            });
+
+            // Top-right: Basis 2 + same geometric v
+            drawPanel(510, 10, pw, ph, "Basis 2  —  same geometric v", () => {
+                stroke(70); strokeWeight(1);
+                line(-180, 0, 180, 0); line(0, -130, 0, 130);
+                drawArrow([0, 0], [Λ[0][0] * 32, Λ[1][0] * 32], color(255, 80, 80), 2);
+                drawArrow([0, 0], [Λ[0][1] * 32, Λ[1][1] * 32], color(255, 80, 80), 2);
+                if (Λinv) {
+                    const recon = [
+                        v_b2[0] * Λ[0][0] + v_b2[1] * Λ[0][1],
+                        v_b2[0] * Λ[1][0] + v_b2[1] * Λ[1][1]
+                    ];
+                    drawArrow([0, 0], [recon[0] * 32, recon[1] * 32], color(180, 100, 255), 3);
+                }
+            });
+
+            // Bottom-left: Basis 1 vectors seen from Basis 2
+            drawPanel(10, 360, pw, ph, "Basis 1 vectors seen from Basis 2", () => {
+                stroke(70); strokeWeight(1);
+                line(-180, 0, 180, 0); line(0, -130, 0, 130);
+                drawArrow([0, 0], [36, 0], color(255, 80, 80), 1.5);
+                drawArrow([0, 0], [0, 36], color(255, 80, 80), 1.5);
+                if (Λinv) {
+                    const e1 = apply(Λinv, [1, 0]);
+                    const e2 = apply(Λinv, [0, 1]);
+                    drawArrow([0, 0], [e1[0] * 32, e1[1] * 32], color(80, 140, 255), 2.5);
+                    drawArrow([0, 0], [e2[0] * 32, e2[1] * 32], color(80, 140, 255), 2.5);
+                }
+            });
+
+            // Bottom-right: Basis 2 vectors seen from Basis 1
+            drawPanel(510, 360, pw, ph, "Basis 2 vectors seen from Basis 1", () => {
+                stroke(70); strokeWeight(1);
+                line(-180, 0, 180, 0); line(0, -130, 0, 130);
+                drawArrow([0, 0], [36, 0], color(80, 140, 255), 1.5);
+                drawArrow([0, 0], [0, 36], color(80, 140, 255), 1.5);
+                drawArrow([0, 0], [Λ[0][0] * 32, Λ[1][0] * 32], color(255, 80, 80), 2.5);
+                drawArrow([0, 0], [Λ[0][1] * 32, Λ[1][1] * 32], color(255, 80, 80), 2.5);
+            });
+
+            // Live read-outs
+            const detStr = abs(det) < 1e-6 ? "SINGULAR" : det.toFixed(3);
+            select('#readout').html(`
+        <b>Λ</b> (Basis 1 → Basis 2)<br>
+        <span>[${Λ[0][0].toFixed(2)}&nbsp;&nbsp;${Λ[0][1].toFixed(2)}]</span><br>
+        <span>[${Λ[1][0].toFixed(2)}&nbsp;&nbsp;${Λ[1][1].toFixed(2)}]</span><br>
+        det(Λ) = <span>${detStr}</span><br><br>
+        <b>v in Basis 1:</b> <span>(${v[0].toFixed(2)}, ${v[1].toFixed(2)})</span><br>
+        <b>v in Basis 2:</b> <span>(${v_b2[0].toFixed(2)}, ${v_b2[1].toFixed(2)})</span>
+      `);
+        }
+    </script>
+</body>
+
+</html>

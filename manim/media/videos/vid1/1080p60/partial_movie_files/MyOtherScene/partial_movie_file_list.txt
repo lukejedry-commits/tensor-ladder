@@ -1,0 +1,10 @@
+# This file is used internally by FFMPEG.
+file 'file:/workspaces/tensor-ladder/manim/media/videos/vid1/1080p60/partial_movie_files/MyOtherScene/819936691_3384026028_223132457.mp4'
+file 'file:/workspaces/tensor-ladder/manim/media/videos/vid1/1080p60/partial_movie_files/MyOtherScene/2213807979_4181036732_4108201348.mp4'
+file 'file:/workspaces/tensor-ladder/manim/media/videos/vid1/1080p60/partial_movie_files/MyOtherScene/2213807979_4046863825_3654971011.mp4'
+file 'file:/workspaces/tensor-ladder/manim/media/videos/vid1/1080p60/partial_movie_files/MyOtherScene/2213807979_150444349_530906677.mp4'
+file 'file:/workspaces/tensor-ladder/manim/media/videos/vid1/1080p60/partial_movie_files/MyOtherScene/2213807979_3331748784_1741940337.mp4'
+file 'file:/workspaces/tensor-ladder/manim/media/videos/vid1/1080p60/partial_movie_files/MyOtherScene/2213807979_4046863825_835660663.mp4'
+file 'file:/workspaces/tensor-ladder/manim/media/videos/vid1/1080p60/partial_movie_files/MyOtherScene/2213807979_656857296_1416840483.mp4'
+file 'file:/workspaces/tensor-ladder/manim/media/videos/vid1/1080p60/partial_movie_files/MyOtherScene/2213807979_2411727059_1917233124.mp4'
+file 'file:/workspaces/tensor-ladder/manim/media/videos/vid1/1080p60/partial_movie_files/MyOtherScene/2213807979_4046863825_2741084077.mp4'
