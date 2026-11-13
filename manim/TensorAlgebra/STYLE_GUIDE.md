@@ -27,15 +27,24 @@ Tested on **Manim Community v0.22.1**.
 | Change-of-basis matrix (forward) | $\beth$, entries $\beth^i{}_j$ | `\beth`, `beth("i","j")` | beth |
 | Backward matrix | $\beth^{-1}$, entries $(\beth^{-1})^i{}_j$ | `BETH_INV`, `beth_inv("i","j")` | beth |
 
-**Hard rules**
+### Hard rules
+
 - **Bold = object, plain = number.** $\mathbf{v}$ is an arrow; $v^1$ is a number that depends on a chosen basis. Components are never bold.
+
 - **Tilde = "belongs to the new basis".** Never use primes ($\mathbf{e}'$): primes will mean derivatives in the tensor calculus episodes.
+
 - **$\beth$** (Hebrew *beth*, said "beth", "b for basis", from `amssymb`) is only the change-of-basis matrix. Backward is always $\beth^{-1}$, never a new letter.
+
 - **Covectors use Greek letters and are never bold.** Allowed: $\alpha, \gamma, \omega$ (and $\sigma, \phi, \psi$ if needed). **Never $\beta$** (too close to $\beth$, both visually and as a pun). $\epsilon$ is reserved for the dual basis.
+
 - **General indices are $i, j, k$** (then $l, m$). Use explicit 1, 2, 3 only when computing a concrete example.
+
 - **Index alphabets.** Latin indices $i, j, k, \dots$ are **spatial coordinates only**. Greek indices $\mu, \nu, \rho, \sigma$ are **spacetime** indices, with index $0$ = time (Minkowski 1+3; more spatial dimensions are possible later). Greek indices are introduced properly only when spacetime arrives. Until then, Episode 0 only teases them.
+
 - **Never use a letter that already names an object or basis as an index.** That rules out $\alpha, \beta, \gamma, \epsilon, \omega$ (covectors, the dual basis, the banned $\beta$) and $e, v$, plus any letter we assign to an object later.
+
 - Matrices are named with plain letters ($\beth$). Their entries carry staggered indices.
+
 - **Never show a bare list for a vector.** A list of numbers is only meaningful with its basis, so every component list on screen is tagged: $[\mathbf{v}]_{\mathbf{e}} = \begin{pmatrix}1\\3\end{pmatrix}$, $[\mathbf{v}]_{\tilde{\mathbf{e}}} = \begin{pmatrix}2\\1\end{pmatrix}$ (use `tagged_components`). Writing $\mathbf{v} = \begin{pmatrix}1\\3\end{pmatrix}$ is allowed only as a crossed-out anti-example (Episode 1, Part 7). Generic programming-style lists like `[1, 3]` in typewriter font are not vectors and may appear as "what people think a vector is" (Episode 1 cold open).
 
 ## 2. Index rules
@@ -77,8 +86,11 @@ Tested on **Manim Community v0.22.1**.
 `tmath` applies this automatically: $\mathbf{w}$ → vector_2, any other bold letter → vector, $\alpha$ with no index → covector (teal), $\alpha_i$ → covector_component, $\tilde{\alpha}_i$ → new_covector_component, $\epsilon^i$ → dual_basis, $\tilde{\epsilon}^i$ → new_dual_basis (same idea for $\gamma, \omega, \dots$). A group is colored by its first matching rule, so keep each symbol in its own group (e.g. write `COVEC, "(", VEC, ")"`, not one `\alpha(\mathbf{v})` group).
 
 **Colorblind note.** A simulated color-vision check (Machado 2009 model; deuteranopia, protanopia, tritanopia) finds these near-collisions:
+
 - **Deuteranopia:** $v^i$ (`#95D3F8`) vs $\alpha_i$ (`#D6C9FF`) are **nearly identical**. This is the closest pair in the whole palette, and the 1/3 lerp made it slightly closer than the old pale tint. Also hot-pink $\mathbf{v}$ vs teal $\alpha$. Not-allowed red vs beth green (only ever an × or a cross).
+
 - **Protanopia:** $v^i$ vs $\alpha_i$ are again **nearly identical** (the closest pair), and pale gold $\tilde{\alpha}_i$ vs beth green.
+
 - **Tritanopia** (rare): teal $\alpha$ vs beth green, and pale coral $\tilde{v}^i$ vs gold $\tilde{\epsilon}^i$.
 
 With typical color vision, $v^i$ is now a bit closer to its basis blue $\mathbf{e}_i$ than before. Bold vs plain still separates them. None of these pairs is ever separated by color alone. $v^i$ vs $\alpha_i$ **must always be told apart by the letter (Latin vs Greek) and the index height (up vs down)**, and never by color alone. $\mathbf{v}$ vs $\alpha$ differ as bold Latin vs plain Greek, and $\beth$ is a unique glyph. So **color is always a second cue, never the only one**. Keep it that way: never introduce two symbols that differ *only* by color.
