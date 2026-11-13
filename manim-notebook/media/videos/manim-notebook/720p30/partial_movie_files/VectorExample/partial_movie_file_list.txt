@@ -1,0 +1,4 @@
+# This file is used internally by FFMPEG.
+file 'file:/workspaces/tensor-ladder/manim-notebook/media/videos/manim-notebook/720p30/partial_movie_files/VectorExample/365777414_2645707024_631829896.mp4'
+file 'file:/workspaces/tensor-ladder/manim-notebook/media/videos/manim-notebook/720p30/partial_movie_files/VectorExample/365777414_3120082415_4043974176.mp4'
+file 'file:/workspaces/tensor-ladder/manim-notebook/media/videos/manim-notebook/720p30/partial_movie_files/VectorExample/3406304037_2645707024_3544231002.mp4'
