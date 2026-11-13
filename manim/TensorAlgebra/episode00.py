@@ -370,7 +370,7 @@ class E00_06_Beth(Ep0Mixin, TensorScene):
 
         big = tmath(BETH, font_size=160).move_to(UP * 0.5)
         self.play(Write(big), run_time=1.5)
-        self.caption(r"This is $\beth$ (\emph{bet}), the second letter of the Hebrew alphabet. It sounds like ``b''.")
+        self.caption(r"This is $\beth$ (\emph{beth}), the second letter of the Hebrew alphabet. It sounds like ``b''.")
         self.caption(r"B for \textbf{basis}: $\beth$ is our change-of-basis matrix.")
 
         mat = tmath(BETH, "=", r"\begin{pmatrix} 1 & -1 \\ 1 & 1 \end{pmatrix}", font_size=60).move_to(UP * 0.5)

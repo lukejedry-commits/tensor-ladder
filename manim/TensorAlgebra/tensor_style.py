@@ -45,7 +45,7 @@ from manim import (
 __all__ = [
     # palette
     "BG_COLOR", "TEXT_COLOR", "GRID_COLOR", "AXIS_COLOR",
-    "VECTOR_COLOR", "BASIS_COLOR", "NEW_BASIS_COLOR",
+    "VECTOR_COLOR", "VECTOR_2_COLOR", "BASIS_COLOR", "NEW_BASIS_COLOR",
     "COMPONENT_COLOR", "NEW_COMPONENT_COLOR",
     "COVECTOR_COLOR", "DUAL_BASIS_COLOR", "NEW_DUAL_BASIS_COLOR",
     "COVECTOR_COMPONENT_COLOR", "NEW_COVECTOR_COMPONENT_COLOR",
@@ -61,6 +61,7 @@ __all__ = [
     # mobject factories
     "LabeledArrow", "styled_plane", "styled_vector", "basis_vector",
     "new_basis_vector", "covector_stack", "styled_axes_3d",
+    "basis_grid", "recipe_walk", "tagged_components",
     # scenes
     "TensorScene", "TensorThreeDScene",
 ]
@@ -82,6 +83,7 @@ AXIS_COLOR = "#8A93A6"        # NumberPlane axes
 
 # objects
 VECTOR_COLOR = "#FF3EA5"                  # hot pink: the vector       v (bold)
+VECTOR_2_COLOR = "#C4378A"                # dim hot pink: a 2nd vector w (bold), same role, darker
 COVECTOR_COLOR = "#2DD4BF"                # teal: the covector         alpha (no index)
 # vector side: blue (old) / orange (new)
 BASIS_COLOR = "#56B4E9"                   # sky blue: old basis        e_i
@@ -104,6 +106,7 @@ PALETTE = {
     "grid": GRID_COLOR,
     "axis": AXIS_COLOR,
     "vector": VECTOR_COLOR,
+    "vector_2": VECTOR_2_COLOR,
     "covector": COVECTOR_COLOR,
     "basis": BASIS_COLOR,
     "component": COMPONENT_COLOR,
@@ -214,6 +217,7 @@ TEX_COLOR_RULES: list[tuple[str, str]] = [
     (r"\\tilde\{\s*" + _COVECTOR_LETTERS + r"\s*\}\s*_", NEW_COVECTOR_COMPONENT_COLOR),
     (_COVECTOR_LETTERS + r"(?![A-Za-z])\s*_", COVECTOR_COMPONENT_COLOR),
     (_COVECTOR_LETTERS + r"(?![A-Za-z])", COVECTOR_COLOR),
+    (r"\\mathbf\{\s*w\s*\}", VECTOR_2_COLOR),   # second vector w: dim pink
     (r"\\mathbf\{", VECTOR_COLOR),
     (r"\\tilde\{\s*[A-Za-z]\s*\}\s*\^", NEW_COMPONENT_COLOR),
     (r"^\s*[A-Za-z]\s*\^", COMPONENT_COLOR),
@@ -309,7 +313,8 @@ def tmath(
 
     kwargs.setdefault("color", TEXT_COLOR)
     mob = MathTex(*groups, font_size=font_size, **kwargs)
-    overrides = colors or {}
+    # match overrides on the same defused text as the groups (e.g. "}}" -> "} }")
+    overrides = {_defuse(k): v for k, v in (colors or {}).items()}
     # One submobject per group (Manim CE >= 0.19 keeps .tex_string on each).
     for part, src in zip(mob.submobjects, groups):
         color = overrides.get(src) or classify_tex(src)
@@ -383,14 +388,18 @@ def styled_vector(
     coords: Sequence[float],
     plane: NumberPlane | None = None,
     label: str | None = VEC,
-    color: str = VECTOR_COLOR,
+    color: str | None = None,
     start: Sequence[float] = (0, 0),
     label_direction=None,
 ) -> LabeledArrow:
     """The vector itself: thick hot-pink arrow from ``start`` to ``start+coords``.
 
     Coordinates are in plane units if ``plane`` is given, else scene units.
+    ``color`` defaults to the label's role color (so ``label=bold("w")`` gives
+    the dim second-vector pink), else VECTOR_COLOR.
     """
+    if color is None:
+        color = (classify_tex(label) if label else None) or VECTOR_COLOR
     s = _to_point(start, plane)
     n = max(len(start), len(coords))
     pad = lambda c: list(c) + [0] * (n - len(c))
@@ -500,6 +509,116 @@ def covector_stack(
         group.add(arrow)
         group.direction = arrow
     return group
+
+
+def basis_grid(
+    plane: NumberPlane,
+    b1: Sequence[float],
+    b2: Sequence[float],
+    color: str = NEW_BASIS_COLOR,
+    opacity: float = 0.45,
+    stroke_width: float = 1.5,
+    region: Sequence[float] | None = None,
+) -> VGroup:
+    """Grid of an arbitrary 2D basis (b1, b2 in old/plane coordinates).
+
+    Draw it as an OVERLAY on a plane: it never moves anything else, so the
+    vector stays put during a change of basis. Internally the grid lines are
+    the integer level lines of the dual basis (rows of [b1 b2]^-1).
+    Returns VGroup(lines_along_b2, lines_along_b1).
+    """
+    B = np.array([[b1[0], b2[0]], [b1[1], b2[1]]], dtype=float)
+    if abs(np.linalg.det(B)) < 1e-12:
+        raise ValueError("basis_grid: b1 and b2 are parallel (not a basis)")
+    Binv = np.linalg.inv(B)
+    g = VGroup(*[
+        covector_stack(tuple(Binv[k]), plane, color=color, show_direction=False, region=region)
+        for k in range(2)
+    ])
+    g.set_stroke(width=stroke_width, opacity=opacity)
+    return g
+
+
+def recipe_walk(
+    components: Sequence[float],
+    basis_coords: Sequence[Sequence[float]],
+    plane: NumberPlane,
+    colors: Sequence[str] | None = None,
+    start: Sequence[float] = (0, 0),
+    numbered: bool = False,
+    number_color: str | None = None,
+    stroke_width: float = BASIS_STROKE - 1,
+    number_size: float = 26,
+    number_side: float = 1.0,
+) -> VGroup:
+    """Tip-to-tail "recipe" for v = v^i b_i: |v^1| copies of b_1, then |v^2| of b_2.
+
+    Fractional amounts get a partial last step; negative amounts walk backwards.
+    ``basis_coords`` are the basis vectors in plane coordinates. ``numbered``
+    adds a small step counter (1, 2, 3, ...) beside each full step, on the
+    left of the walking direction (``number_side=1``) or the right (``-1``).
+    Returns VGroup(steps, labels) with attributes .steps (list of Arrows, in
+    walking order), .labels (VGroup), .end (end point, plane coordinates).
+    """
+    if colors is None:
+        colors = [BASIS_COLOR] * len(components)
+    if number_color is None:
+        number_color = COMPONENT_COLOR
+    pos = np.array(start[:2], dtype=float)
+    steps, labels = VGroup(), VGroup()
+    for amount, b, col in zip(components, basis_coords, colors):
+        b = np.array(b[:2], dtype=float)
+        sign = 1.0 if amount >= 0 else -1.0
+        n_full = int(np.floor(abs(amount) + 1e-9))
+        frac = abs(amount) - n_full
+        pieces = [1.0] * n_full + ([frac] if frac > 1e-9 else [])
+        for k, size in enumerate(pieces):
+            nxt = pos + sign * size * b
+            arr = Arrow(plane.c2p(*pos), plane.c2p(*nxt), buff=0, color=col,
+                        stroke_width=stroke_width, max_tip_length_to_length_ratio=0.3,
+                        max_stroke_width_to_length_ratio=12)
+            steps.add(arr)
+            if numbered and size == 1.0:
+                d = plane.c2p(*nxt) - plane.c2p(*pos)
+                n = number_side * np.array([-d[1], d[0], 0.0])
+                n = n / (np.linalg.norm(n) or 1)
+                lab = MathTex(str(k + 1), font_size=number_size, color=number_color)
+                lab.move_to(arr.get_center() + 0.28 * n)
+                labels.add(lab)
+            pos = nxt
+    group = VGroup(steps, labels)
+    group.steps = list(steps)
+    group.labels = labels
+    group.end = pos
+    return group
+
+
+def tagged_components(
+    values: Sequence,
+    new: bool = False,
+    name: str = "v",
+    font_size: float = TEX_SIZE,
+) -> MathTex:
+    r"""A component list that always carries its basis: [\mathbf{v}]_{\mathbf{e}} = (v^1; v^2).
+
+    Series rule: never show a bare list for a vector. ``new=True`` tags it with
+    the new basis \tilde{\mathbf{e}} and uses the new-component color. ``values``
+    may be numbers or TeX strings (e.g. r"\tfrac12"). Returns the MathTex with
+    attributes .tag and .column.
+    """
+    basis = NEW_BASIS if new else BASIS
+    tag = rf"[\mathbf{{{name}}}]_{{{basis}}}"
+    sep = r" \\[4pt] " if any("frac" in str(v) for v in values) else r" \\ "
+    col = r"\begin{pmatrix} " + sep.join(str(v) for v in values) + r" \end{pmatrix}"
+    comp_color = NEW_COMPONENT_COLOR if new else COMPONENT_COLOR
+    mob = tmath(tag, "=", col, colors={tag: TEXT_COLOR, col: comp_color}, font_size=font_size)
+    # order the tag's glyphs left to right: "[", name, "]", basis (+ its tilde)
+    glyphs = sorted(mob[0].submobjects, key=lambda g: g.get_center()[0])
+    glyphs[1].set_color(classify_tex(bold(name)) or VECTOR_COLOR)
+    for g in glyphs[3:]:
+        g.set_color(NEW_BASIS_COLOR if new else BASIS_COLOR)
+    mob.tag, mob.column = mob[0], mob[2]
+    return mob
 
 
 def styled_axes_3d(**kwargs) -> ThreeDAxes:
