@@ -5,8 +5,13 @@ One TensorScene per part of the Episode 0 outline in STYLE_GUIDE.md.
 Render one part:   manim -ql episode00.py E00_04_Summation
 Render all parts:  manim -ql -a episode00.py
 
-On-screen captions stand in for narration. They use Tex (Computer Modern)
-so the video looks the same on any machine, with no system fonts needed.
+Narration: every beat is wrapped in  `with self.narrate(<beat id>):`  which
+plays audio/episode00/<beat>.mp3 (made by `python voiceover.py episode00`
+from scripts/episode00_narration.py) and holds the beat until the clip ends.
+Render silently with the old caption timing:  TENSOR_VO=off manim -ql ...
+
+Captions use Tex (Computer Modern) so the video looks the same on any
+machine, with no system fonts needed.
 
 Running example (used in every part):
     old basis   e_1 = (1, 0),  e_2 = (0, 1)
@@ -20,6 +25,7 @@ import re
 
 from manim import *
 from tensor_style import *
+from voiceover import NarrationMixin
 
 # --------------------------------------------------------------------------
 # Running example numbers
@@ -62,8 +68,18 @@ def words(text: str, size: float = CAPTION_SIZE, color=TEXT_COLOR) -> Tex:
     return Tex(text, font_size=size, color=color)
 
 
-class Ep0Mixin:
-    """Adds one caption line at the bottom of the frame (in place of narration)."""
+class Ep0Mixin(NarrationMixin):
+    """Caption line at the bottom of the frame + narrated beats (voiceover.py).
+
+    Inside a `narrate()` block the clip sets the timing, so caption and beat
+    holds are skipped; outside one (or with TENSOR_VO=off) they work as before.
+    """
+
+    EPISODE = "episode00"
+
+    def beat(self, seconds: float = PAUSE):
+        if not self._vo_active:
+            super().beat(seconds)
 
     caption_mob = None
 
@@ -81,6 +97,8 @@ class Ep0Mixin:
             self.play(FadeOut(self.caption_mob, shift=UP * 0.15),
                       FadeIn(new, shift=UP * 0.15), run_time=0.6)
         self.caption_mob = new
+        if self._vo_active:
+            return
         n_words = len(re.sub(r"\\[a-zA-Z]+|[${}]", " ", text).split())
         self.beat(max(wait, PAUSE_SHORT + 0.25 * n_words))
 
@@ -117,42 +135,48 @@ class E00_01_Intro(Ep0Mixin, TensorScene):
             words(r"\textbf{Tensors, from the Ground Up}", size=60),
             words(r"Episode 0: How to Read This Series", size=36, color=AXIS_COLOR),
         ).arrange(DOWN, buff=0.35)
-        self.play(Write(title[0]), run_time=1.5)
-        self.play(FadeIn(title[1], shift=UP * 0.2))
-        self.beat(PAUSE_LONG)
+        with self.narrate("E00_01_b1"):
+            self.play(Write(title[0]), run_time=1.5)
+            self.play(FadeIn(title[1], shift=UP * 0.2))
+            self.beat(PAUSE_LONG)
         self.play(FadeOut(title))
 
         plane = ep_plane()
         v = styled_vector(V_OLD, plane)
-        self.play(Create(plane, lag_ratio=0.05), run_time=1.5)
-        self.play(GrowArrow(v.arrow), FadeIn(v.label))
-        self.caption(r"Here is an arrow. It exists before anyone picks coordinates.")
+        with self.narrate("E00_01_b2"):
+            self.play(Create(plane, lag_ratio=0.05), run_time=1.5)
+            self.play(GrowArrow(v.arrow), FadeIn(v.label))
+            self.caption(r"Here is an arrow. It exists before anyone picks coordinates.")
 
         # Old basis: numbers (1, 3)
         e1, e2 = basis_vector(1, (1, 0), plane), basis_vector(2, (0, 1), plane)
-        self.play(GrowArrow(e1.arrow), GrowArrow(e2.arrow), FadeIn(e1.label), FadeIn(e2.label))
-        old_nums = right_panel(tmath(VEC, r"\;\to\;", "(", "1", ",", "3", ")",
-                                     colors={"1": COMPONENT_COLOR, "3": COMPONENT_COLOR}), y=1.2)
-        old_tag = words("measured with the blue basis", size=28, color=BASIS_COLOR).next_to(old_nums, DOWN, buff=0.25)
-        self.play(Write(old_nums), FadeIn(old_tag))
-        self.caption(r"Pick a basis, and the arrow becomes two numbers.")
+        with self.narrate("E00_01_b3"):
+            self.play(GrowArrow(e1.arrow), GrowArrow(e2.arrow), FadeIn(e1.label), FadeIn(e2.label))
+            old_nums = right_panel(tmath(VEC, r"\;\to\;", "(", "1", ",", "3", ")",
+                                         colors={"1": COMPONENT_COLOR, "3": COMPONENT_COLOR}), y=1.2)
+            old_tag = words("measured with the blue basis", size=28, color=BASIS_COLOR).next_to(old_nums, DOWN, buff=0.25)
+            self.play(Write(old_nums), FadeIn(old_tag))
+            self.caption(r"Pick a basis, and the arrow becomes two numbers.")
 
         # New basis: numbers (2, 1)
         grid = new_grid(plane)
         te1, te2 = new_basis_vector(1, E_NEW[0], plane), new_basis_vector(2, E_NEW[1], plane)
-        self.play(plane.background_lines.animate.set_stroke(opacity=0.15),
-                  Create(grid, lag_ratio=0.05), run_time=1.5)
-        self.play(FadeOut(e1), FadeOut(e2), GrowArrow(te1.arrow), GrowArrow(te2.arrow),
-                  FadeIn(te1.label), FadeIn(te2.label))
-        new_nums = right_panel(tmath(VEC, r"\;\to\;", "(", "2", ",", "1", ")",
-                                     colors={"2": NEW_COMPONENT_COLOR, "1": NEW_COMPONENT_COLOR}), y=-0.4)
-        new_tag = words("measured with the coral basis", size=28, color=NEW_BASIS_COLOR).next_to(new_nums, DOWN, buff=0.25)
-        self.play(Write(new_nums), FadeIn(new_tag))
-        self.caption(r"Pick a different basis, and you get different numbers.")
-        self.play(Indicate(v.arrow, color=VECTOR_COLOR, scale_factor=1.05))
-        self.caption(r"Same arrow. Different numbers. \textbf{That is the whole series.}", wait=PAUSE_LONG)
+        with self.narrate("E00_01_b4"):
+            self.play(plane.background_lines.animate.set_stroke(opacity=0.15),
+                      Create(grid, lag_ratio=0.05), run_time=1.5)
+            self.play(FadeOut(e1), FadeOut(e2), GrowArrow(te1.arrow), GrowArrow(te2.arrow),
+                      FadeIn(te1.label), FadeIn(te2.label))
+            new_nums = right_panel(tmath(VEC, r"\;\to\;", "(", "2", ",", "1", ")",
+                                         colors={"2": NEW_COMPONENT_COLOR, "1": NEW_COMPONENT_COLOR}), y=-0.4)
+            new_tag = words("measured with the coral basis", size=28, color=NEW_BASIS_COLOR).next_to(new_nums, DOWN, buff=0.25)
+            self.play(Write(new_nums), FadeIn(new_tag))
+            self.caption(r"Pick a different basis, and you get different numbers.")
+        with self.narrate("E00_01_b5", delay=0.5):
+            self.play(Indicate(v.arrow, color=VECTOR_COLOR, scale_factor=1.05))
+            self.caption(r"Same arrow. Different numbers. \textbf{That is the whole series.}", wait=PAUSE_LONG)
 
-        self.caption(r"First, a quick guide to how we will write all of this down.")
+        with self.narrate("E00_01_b6"):
+            self.caption(r"First, a quick guide to how we will write all of this down.")
         self.play(*[FadeOut(m) for m in self.mobjects])
         self.caption_mob = None
 
@@ -174,22 +198,26 @@ class E00_02_BoldVsPlain(Ep0Mixin, TensorScene):
 
         bold_v = right_panel(tmath(VEC, font_size=96), y=1.3)
         tag_obj = words("bold: the object itself", size=30, color=VECTOR_COLOR).next_to(bold_v, DOWN, buff=0.3)
-        self.play(Write(bold_v), FadeIn(tag_obj))
-        self.caption(r"A \textbf{bold} letter is a geometric object: an arrow, not a list of numbers.")
+        with self.narrate("E00_02_b1"):
+            self.play(Write(bold_v), FadeIn(tag_obj))
+            self.caption(r"A \textbf{bold} letter is a geometric object: an arrow, not a list of numbers.")
 
-        self.play(GrowArrow(e1.arrow), GrowArrow(e2.arrow), FadeIn(e1.label), FadeIn(e2.label))
-        self.caption(r"Basis vectors are objects too, so they are bold as well: $\mathbf{e}_1$ and $\mathbf{e}_2$.")
+        with self.narrate("E00_02_b2"):
+            self.play(GrowArrow(e1.arrow), GrowArrow(e2.arrow), FadeIn(e1.label), FadeIn(e2.label))
+            self.caption(r"Basis vectors are objects too, so they are bold as well: $\mathbf{e}_1$ and $\mathbf{e}_2$.")
 
         eq = right_panel(tmath(VEC, "=", vc(1), e(1), "+", vc(2), e(2)), y=1.3)
-        self.play(FadeOut(tag_obj), TransformMatchingTex(bold_v, eq))
-        # tip-to-tail picture: 1 step of e_1, then 3 steps of e_2
-        step2 = DashedLine(plane.c2p(1, 0), plane.c2p(1, 3), color=BASIS_COLOR, stroke_width=3)
-        self.play(Create(step2), run_time=1.2)
-        self.caption(r"Plain letters are \emph{components}: just numbers, telling us how much of each basis vector to use.")
+        with self.narrate("E00_02_b3"):
+            self.play(FadeOut(tag_obj), TransformMatchingTex(bold_v, eq))
+            # tip-to-tail picture: 1 step of e_1, then 3 steps of e_2
+            step2 = DashedLine(plane.c2p(1, 0), plane.c2p(1, 3), color=BASIS_COLOR, stroke_width=3)
+            self.play(Create(step2), run_time=1.2)
+            self.caption(r"Plain letters are \emph{components}: just numbers, telling us how much of each basis vector to use.")
 
         nums = right_panel(tmath(vc(1), "= 1,", r"\qquad", vc(2), "= 3"), y=0.0)
-        self.play(Write(nums))
-        self.caption(r"Components depend on the basis. Change the basis and they change. The bold arrow stays put.", wait=PAUSE_LONG)
+        with self.narrate("E00_02_b4"):
+            self.play(Write(nums))
+            self.caption(r"Components depend on the basis. Change the basis and they change. The bold arrow stays put.", wait=PAUSE_LONG)
 
         rule = VGroup(
             tmath(r"\mathbf{v}", font_size=60), words("object", size=30),
@@ -198,8 +226,9 @@ class E00_02_BoldVsPlain(Ep0Mixin, TensorScene):
         rule.arrange_in_grid(rows=2, cols=2, col_alignments="cc", buff=(1.2, 0.2), flow_order="dr")
         box = SurroundingRectangle(rule, color=AXIS_COLOR, buff=0.3, corner_radius=0.1)
         card = right_panel(VGroup(rule, box), y=-1.6)
-        self.play(FadeIn(card, shift=UP * 0.2))
-        self.caption(r"Rule \#1: \textbf{bold} means object, plain means number.", wait=PAUSE_LONG)
+        with self.narrate("E00_02_b5"):
+            self.play(FadeIn(card, shift=UP * 0.2))
+            self.caption(r"Rule \#1: \textbf{bold} means object, plain means number.", wait=PAUSE_LONG)
         self.play(*[FadeOut(m) for m in self.mobjects])
         self.caption_mob = None
 
@@ -218,12 +247,16 @@ class E00_03_IndexHeight(Ep0Mixin, TensorScene):
         pair = VGroup(up, down).arrange(RIGHT, buff=3).move_to(UP * 0.9)
         up_tag = words(r"upper index:\\vector components", size=30, color=COMPONENT_COLOR).next_to(up, DOWN, buff=0.4)
         down_tag = words(r"lower index:\\basis vectors", size=30, color=BASIS_COLOR).next_to(down, DOWN, buff=0.4)
-        self.play(Write(up), FadeIn(up_tag))
-        self.caption(r"Components of a vector carry their index \textbf{up high}.")
-        self.play(Write(down), FadeIn(down_tag))
-        self.caption(r"Basis vectors carry their index \textbf{down low}.")
-        self.caption(r"Here $i$ is a label that can be 1 or 2 (or 3, once we reach 3D).")
-        self.caption(r"Latin indices ($i, j, k$) mean space. Greek ($\mu, \nu$) are saved for spacetime.")
+        with self.narrate("E00_03_b1"):
+            self.play(Write(up), FadeIn(up_tag))
+            self.caption(r"Components of a vector carry their index \textbf{up high}.")
+        with self.narrate("E00_03_b2"):
+            self.play(Write(down), FadeIn(down_tag))
+            self.caption(r"Basis vectors carry their index \textbf{down low}.")
+        with self.narrate("E00_03_b3"):
+            self.caption(r"Here $i$ is a label that can be 1 or 2 (or 3, once we reach 3D).")
+        with self.narrate("E00_03_b4"):
+            self.caption(r"Latin indices ($i, j, k$) mean space. Greek ($\mu, \nu$) are saved for spacetime.")
 
         # Heights are not exponents
         self.play(FadeOut(VGroup(up, down, up_tag, down_tag)))
@@ -232,10 +265,12 @@ class E00_03_IndexHeight(Ep0Mixin, TensorScene):
         row = VGroup(comp2, sq).arrange(RIGHT, buff=3).move_to(UP * 0.9)
         comp2_tag = words(r"``component number 2''", size=30).next_to(comp2, DOWN, buff=0.4)
         sq_tag = words(r"an actual square:\\always in parentheses", size=30).next_to(sq, DOWN, buff=0.4)
-        self.play(Write(comp2), FadeIn(comp2_tag))
-        self.caption(r"Careful: an upper index is \emph{not} an exponent. $v^2$ is component number 2.")
-        self.play(Write(sq), FadeIn(sq_tag))
-        self.caption(r"If we ever mean a square, we will use parentheses. No exceptions.", wait=PAUSE_LONG)
+        with self.narrate("E00_03_b5"):
+            self.play(Write(comp2), FadeIn(comp2_tag))
+            self.caption(r"Careful: an upper index is \emph{not} an exponent. $v^2$ is component number 2.")
+        with self.narrate("E00_03_b6"):
+            self.play(Write(sq), FadeIn(sq_tag))
+            self.caption(r"If we ever mean a square, we will use parentheses. No exceptions.", wait=PAUSE_LONG)
 
         # Preview of the full height table
         self.play(FadeOut(VGroup(comp2, sq, comp2_tag, sq_tag)))
@@ -245,10 +280,12 @@ class E00_03_IndexHeight(Ep0Mixin, TensorScene):
             words("down", size=30, color=AXIS_COLOR), tmath(e("i")), tmath(cc("i")),
         ).arrange_in_grid(rows=3, cols=3, buff=(1.2, 0.5))
         table.move_to(UP * 0.5)
-        self.play(FadeIn(table[:5]), FadeIn(table[6:8]))
-        self.caption(r"Vectors: components up, basis down.")
-        self.play(FadeIn(table[5]), FadeIn(table[8]))
-        self.caption(r"Covectors (Part 7) flip it: components down, basis up. Keep this table handy.", wait=PAUSE_LONG)
+        with self.narrate("E00_03_b7"):
+            self.play(FadeIn(table[:5]), FadeIn(table[6:8]))
+            self.caption(r"Vectors: components up, basis down.")
+        with self.narrate("E00_03_b8"):
+            self.play(FadeIn(table[5]), FadeIn(table[8]))
+            self.caption(r"Covectors (Part 7) flip it: components down, basis up. Keep this table handy.", wait=PAUSE_LONG)
         self.play(*[FadeOut(m) for m in self.mobjects])
         self.caption_mob = None
 
@@ -263,17 +300,20 @@ class E00_04_Summation(Ep0Mixin, TensorScene):
         title = self.part_title(4, "Einstein Summation")
 
         full = tmath(VEC, "=", vc(1), e(1), "+", vc(2), e(2), font_size=60).move_to(UP * 0.8)
-        self.play(Write(full))
-        self.caption(r"Writing out every term gets old fast, especially in 3D or with more indices.")
+        with self.narrate("E00_04_b1"):
+            self.play(Write(full))
+            self.caption(r"Writing out every term gets old fast, especially in 3D or with more indices.")
 
         sigma = tmath(VEC, "=", r"\sum_{i=1}^{2}", vc("i"), e("i"), font_size=60).move_to(UP * 0.8)
-        self.play(TransformMatchingTex(full, sigma), run_time=1.5)
-        self.caption(r"So first we compress it into a sum over $i$...")
+        with self.narrate("E00_04_b2"):
+            self.play(TransformMatchingTex(full, sigma), run_time=1.5)
+            self.caption(r"So first we compress it into a sum over $i$...")
 
         short = tmath(VEC, "=", vc("i"), e("i"), font_size=60).move_to(UP * 0.8)
-        self.play(sigma[2].animate.set_opacity(0.0), run_time=1.2)
-        self.play(TransformMatchingTex(sigma, short), run_time=1.0)
-        self.caption(r"...and then we drop the $\Sigma$ entirely. The sum is still there, just implied.")
+        with self.narrate("E00_04_b3"):
+            self.play(sigma[2].animate.set_opacity(0.0), run_time=1.2)
+            self.play(TransformMatchingTex(sigma, short), run_time=1.0)
+            self.caption(r"...and then we drop the $\Sigma$ entirely. The sum is still there, just implied.")
 
         # Point at the two i's: one up, one down
         i_up = short[2][1]
@@ -286,12 +326,13 @@ class E00_04_Summation(Ep0Mixin, TensorScene):
         r2 = VGroup(down_lbl, Arrow(down_lbl.get_top(), i_down.get_bottom(), buff=0.08,
                                     color=BASIS_COLOR, stroke_width=3,
                                     max_tip_length_to_length_ratio=0.35))
-        self.play(FadeIn(r1, shift=DOWN * 0.1), FadeIn(r2, shift=UP * 0.1))
-        self.play(Indicate(i_up, color=COMPONENT_COLOR), Indicate(i_down, color=BASIS_COLOR))
-        rule = words(r"\textbf{Rule:} an index repeated once \emph{up} and once \emph{down} in a term is summed.",
-                     size=32).next_to(short, DOWN, buff=1.5)
-        self.play(FadeIn(rule, shift=UP * 0.2))
-        self.caption(r"This is the Einstein summation convention. From now on it is \textbf{always on}.", wait=PAUSE_LONG)
+        with self.narrate("E00_04_b4"):
+            self.play(FadeIn(r1, shift=DOWN * 0.1), FadeIn(r2, shift=UP * 0.1))
+            self.play(Indicate(i_up, color=COMPONENT_COLOR), Indicate(i_down, color=BASIS_COLOR))
+            rule = words(r"\textbf{Rule:} an index repeated once \emph{up} and once \emph{down} in a term is summed.",
+                         size=32).next_to(short, DOWN, buff=1.5)
+            self.play(FadeIn(rule, shift=UP * 0.2))
+            self.caption(r"This is the Einstein summation convention. From now on it is \textbf{always on}.", wait=PAUSE_LONG)
         self.play(FadeOut(VGroup(r1, r2, rule)), short.animate.scale(0.75).move_to(UP * 1.6))
 
         # Valid vs invalid
@@ -301,10 +342,12 @@ class E00_04_Summation(Ep0Mixin, TensorScene):
         good_m, bad_m = self.check(good, True), self.check(bad, False)
         good_tag = words(r"one up, one down:\\a sum", size=28).next_to(good, DOWN, buff=0.4)
         bad_tag = words(r"two uppers:\\not allowed", size=28).next_to(bad, DOWN, buff=0.4)
-        self.play(Write(good), FadeIn(good_m), FadeIn(good_tag))
-        self.caption(r"One up and one down: summed. This one shows up a lot.")
-        self.play(Write(bad), FadeIn(bad_m), FadeIn(bad_tag))
-        self.caption(r"Two uppers (or two lowers) on the same index: a mistake on screen, never a sum.", wait=PAUSE_LONG)
+        with self.narrate("E00_04_b5"):
+            self.play(Write(good), FadeIn(good_m), FadeIn(good_tag))
+            self.caption(r"One up and one down: summed. This one shows up a lot.")
+        with self.narrate("E00_04_b6"):
+            self.play(Write(bad), FadeIn(bad_m), FadeIn(bad_tag))
+            self.caption(r"Two uppers (or two lowers) on the same index: a mistake on screen, never a sum.", wait=PAUSE_LONG)
         self.play(*[FadeOut(m) for m in self.mobjects])
         self.caption_mob = None
 
@@ -324,25 +367,29 @@ class E00_05_Tilde(Ep0Mixin, TensorScene):
                   FadeIn(e1), FadeIn(e2))
 
         old_eq = right_panel(tmath(VEC, "=", vc("i"), e("i")), y=1.2)
-        self.play(Write(old_eq))
-        self.caption(r"Here is our vector in the old basis.")
+        with self.narrate("E00_05_b1"):
+            self.play(Write(old_eq))
+            self.caption(r"Here is our vector in the old basis.")
 
         grid = new_grid(plane)
         te1, te2 = new_basis_vector(1, E_NEW[0], plane), new_basis_vector(2, E_NEW[1], plane)
-        self.play(FadeOut(e1), FadeOut(e2),
-                  plane.background_lines.animate.set_stroke(opacity=0.15), Create(grid, lag_ratio=0.05))
-        self.play(GrowArrow(te1.arrow), GrowArrow(te2.arrow), FadeIn(te1.label), FadeIn(te2.label))
-        self.caption(r"Now choose a \textbf{new} basis. We mark everything new with a tilde.")
+        with self.narrate("E00_05_b2"):
+            self.play(FadeOut(e1), FadeOut(e2),
+                      plane.background_lines.animate.set_stroke(opacity=0.15), Create(grid, lag_ratio=0.05))
+            self.play(GrowArrow(te1.arrow), GrowArrow(te2.arrow), FadeIn(te1.label), FadeIn(te2.label))
+            self.caption(r"Now choose a \textbf{new} basis. We mark everything new with a tilde.")
 
         new_eq = right_panel(tmath(VEC, "=", vct("i"), et("i")), y=0.0)
-        self.play(Write(new_eq))
-        self.caption(r"New basis vectors get a tilde, and so do the new components.")
+        with self.narrate("E00_05_b3"):
+            self.play(Write(new_eq))
+            self.caption(r"New basis vectors get a tilde, and so do the new components.")
 
         both = right_panel(tmath(VEC, "=", vc("i"), e("i"), "=", vct("i"), et("i")), y=1.2)
-        self.play(FadeOut(new_eq), TransformMatchingTex(old_eq, both))
-        box = SurroundingRectangle(both, color=AXIS_COLOR, buff=0.2, corner_radius=0.1)
-        self.play(Create(box))
-        self.caption(r"Notice that $\mathbf{v}$ has no tilde. The object never changes, only how we describe it.", wait=PAUSE_LONG)
+        with self.narrate("E00_05_b4"):
+            self.play(FadeOut(new_eq), TransformMatchingTex(old_eq, both))
+            box = SurroundingRectangle(both, color=AXIS_COLOR, buff=0.2, corner_radius=0.1)
+            self.play(Create(box))
+            self.caption(r"Notice that $\mathbf{v}$ has no tilde. The object never changes, only how we describe it.", wait=PAUSE_LONG)
 
         # Why not primes
         prime = tmath(r"\mathbf{e}'_{i}", font_size=60)
@@ -350,11 +397,13 @@ class E00_05_Tilde(Ep0Mixin, TensorScene):
         why = VGroup(prime, deriv).arrange(RIGHT, buff=1.6)
         right_panel(why, y=-0.8)
         cross = Cross(prime, stroke_color=NOT_ALLOWED_COLOR, stroke_width=6)
-        self.play(FadeIn(prime))
-        self.play(Create(cross))
-        self.caption(r"Why not a prime, like many textbooks use?")
-        self.play(FadeIn(deriv, shift=LEFT * 0.2))
-        self.caption(r"Because in tensor calculus a prime looks like a \emph{derivative}. A tilde never does.", wait=PAUSE_LONG)
+        with self.narrate("E00_05_b5"):
+            self.play(FadeIn(prime))
+            self.play(Create(cross))
+            self.caption(r"Why not a prime, like many textbooks use?")
+        with self.narrate("E00_05_b6"):
+            self.play(FadeIn(deriv, shift=LEFT * 0.2))
+            self.caption(r"Because in tensor calculus a prime looks like a \emph{derivative}. A tilde never does.", wait=PAUSE_LONG)
         self.play(*[FadeOut(m) for m in self.mobjects])
         self.caption_mob = None
 
@@ -369,39 +418,45 @@ class E00_06_Beth(Ep0Mixin, TensorScene):
         title = self.part_title(6, r"Meet $\beth$, the Basis-Changer")
 
         big = tmath(BETH, font_size=160).move_to(UP * 0.5)
-        self.play(Write(big), run_time=1.5)
-        self.caption(r"This is $\beth$ (\emph{beth}), the second letter of the Hebrew alphabet. It sounds like ``b''.")
-        self.caption(r"B for \textbf{basis}: $\beth$ is our change-of-basis matrix.")
+        with self.narrate("E00_06_b1"):
+            self.play(Write(big), run_time=1.5)
+            self.caption(r"This is $\beth$ (\emph{beth}), the second letter of the Hebrew alphabet. It sounds like ``b''.")
+        with self.narrate("E00_06_b2"):
+            self.caption(r"B for \textbf{basis}: $\beth$ is our change-of-basis matrix.")
 
         mat = tmath(BETH, "=", r"\begin{pmatrix} 1 & -1 \\ 1 & 1 \end{pmatrix}", font_size=60).move_to(UP * 0.5)
-        self.play(TransformMatchingTex(big, mat))
-        self.caption(r"Each column holds a new basis vector, written in old coordinates.")
+        with self.narrate("E00_06_b3"):
+            self.play(TransformMatchingTex(big, mat))
+            self.caption(r"Each column holds a new basis vector, written in old coordinates.")
 
         # Staggered indices
         stag = tmath(beth("i", "j"), font_size=130).move_to(UP * 0.5)
-        self.play(FadeOut(mat), FadeIn(stag))
-        glyphs = stag[0]
-        i_up, j_down = glyphs[1], glyphs[2]
-        row_lbl = words("row", size=34, color=AXIS_COLOR).next_to(i_up, RIGHT, buff=1.4).shift(UP * 0.4)
-        col_lbl = words("column", size=34, color=AXIS_COLOR).next_to(j_down, RIGHT, buff=1.4).shift(DOWN * 0.4)
-        a1 = Arrow(row_lbl.get_left(), i_up.get_right(), buff=0.15, color=AXIS_COLOR, stroke_width=3)
-        a2 = Arrow(col_lbl.get_left(), j_down.get_right(), buff=0.15, color=AXIS_COLOR, stroke_width=3)
-        self.play(FadeIn(row_lbl), GrowArrow(a1))
-        self.play(FadeIn(col_lbl), GrowArrow(a2))
-        self.caption(r"Its entries have \textbf{staggered} indices: the first is the row, the second is the column.", wait=PAUSE_LONG)
+        with self.narrate("E00_06_b4"):
+            self.play(FadeOut(mat), FadeIn(stag))
+            glyphs = stag[0]
+            i_up, j_down = glyphs[1], glyphs[2]
+            row_lbl = words("row", size=34, color=AXIS_COLOR).next_to(i_up, RIGHT, buff=1.4).shift(UP * 0.4)
+            col_lbl = words("column", size=34, color=AXIS_COLOR).next_to(j_down, RIGHT, buff=1.4).shift(DOWN * 0.4)
+            a1 = Arrow(row_lbl.get_left(), i_up.get_right(), buff=0.15, color=AXIS_COLOR, stroke_width=3)
+            a2 = Arrow(col_lbl.get_left(), j_down.get_right(), buff=0.15, color=AXIS_COLOR, stroke_width=3)
+            self.play(FadeIn(row_lbl), GrowArrow(a1))
+            self.play(FadeIn(col_lbl), GrowArrow(a2))
+            self.caption(r"Its entries have \textbf{staggered} indices: the first is the row, the second is the column.", wait=PAUSE_LONG)
         self.play(FadeOut(VGroup(stag, row_lbl, col_lbl, a1, a2)))
 
         # Forward rule for the basis
         fwd = tmath(et("j"), "=", beth("i", "j"), e("i"), font_size=60).move_to(UP * 1.2)
         fwd_tag = words(r"forward: old basis $\to$ new basis", size=30, color=AXIS_COLOR).next_to(fwd, DOWN, buff=0.3)
-        self.play(Write(fwd), FadeIn(fwd_tag))
-        self.caption(r"$\beth$ builds the new basis out of the old one. Note: $i$ is summed, and $j$ is free on both sides.", wait=PAUSE_LONG)
+        with self.narrate("E00_06_b5"):
+            self.play(Write(fwd), FadeIn(fwd_tag))
+            self.caption(r"$\beth$ builds the new basis out of the old one. Note: $i$ is summed, and $j$ is free on both sides.", wait=PAUSE_LONG)
 
         # Backward rule for components
         bwd = tmath(vct("i"), "=", beth_inv("i", "j"), vc("j"), font_size=60).move_to(DOWN * 0.6)
         bwd_tag = words(r"backward: components use $\beth^{-1}$", size=30, color=AXIS_COLOR).next_to(bwd, DOWN, buff=0.3)
-        self.play(Write(bwd), FadeIn(bwd_tag))
-        self.caption(r"Components go the \emph{other} way, with the inverse $\beth^{-1}$. Hence ``contra''-variant.", wait=PAUSE_LONG)
+        with self.narrate("E00_06_b6"):
+            self.play(Write(bwd), FadeIn(bwd_tag))
+            self.caption(r"Components go the \emph{other} way, with the inverse $\beth^{-1}$. Hence ``contra''-variant.", wait=PAUSE_LONG)
 
         # Numeric check
         self.play(FadeOut(VGroup(fwd, fwd_tag, bwd_tag)), bwd.animate.move_to(UP * 1.2))
@@ -416,9 +471,11 @@ class E00_06_Beth(Ep0Mixin, TensorScene):
             },
             font_size=54,
         ).move_to(DOWN * 0.8)
-        self.play(Write(num), run_time=1.5)
-        self.caption(r"Our arrow: old components $(1, 3)$ become new components $(2, 1)$. Same arrow, as promised.", wait=PAUSE_LONG)
-        self.caption(r"We will derive all of this properly in Episode 2. For now, just learn the names.")
+        with self.narrate("E00_06_b7"):
+            self.play(Write(num), run_time=1.5)
+            self.caption(r"Our arrow: old components $(1, 3)$ become new components $(2, 1)$. Same arrow, as promised.", wait=PAUSE_LONG)
+        with self.narrate("E00_06_b8"):
+            self.caption(r"We will derive all of this properly in Episode 2. For now, just learn the names.")
         self.play(*[FadeOut(m) for m in self.mobjects])
         self.caption_mob = None
 
@@ -433,33 +490,37 @@ class E00_07_Covectors(Ep0Mixin, TensorScene):
         title = self.part_title(7, "Greek Letters Mean Covectors")
 
         greek = tmath(r"\alpha", ",", r"\gamma", ",", r"\omega", font_size=90).move_to(UP * 0.7)
-        self.play(Write(greek))
-        self.caption(r"Covectors get Greek letters. They are \textbf{never} bold, so they cannot be mistaken for vectors.")
+        with self.narrate("E00_07_b1"):
+            self.play(Write(greek))
+            self.caption(r"Covectors get Greek letters. They are \textbf{never} bold, so they cannot be mistaken for vectors.")
         beta = MathTex(r"\beta", font_size=90, color=TEXT_COLOR).next_to(greek, RIGHT, buff=1.0)
         cross = Cross(beta, stroke_color=NOT_ALLOWED_COLOR, stroke_width=6)
-        self.play(FadeIn(beta))
-        self.play(Create(cross))
-        self.caption(r"And never $\beta$: it is too easy to confuse with our $\beth$.")
+        with self.narrate("E00_07_b2"):
+            self.play(FadeIn(beta))
+            self.play(Create(cross))
+            self.caption(r"And never $\beta$: it is too easy to confuse with our $\beth$.")
         self.play(FadeOut(VGroup(greek, beta, cross)))
 
         # The picture: a stack of level lines
         plane = ep_plane()
         v = styled_vector(V_OLD, plane, label_direction=RIGHT)
         alpha = covector_stack(ALPHA, plane, direction_anchor=(1.8, -0.3))
-        self.play(FadeIn(plane), GrowArrow(v.arrow), FadeIn(v.label))
-        self.play(Create(alpha.lines, lag_ratio=0.1), run_time=1.5)
-        self.play(GrowArrow(alpha.direction))
-        a_lbl = right_panel(tmath(COVEC, font_size=72), y=1.5)
-        self.play(Write(a_lbl))
-        self.caption(r"Picture a covector as a \textbf{stack of lines}, with a direction in which its value grows.")
+        with self.narrate("E00_07_b3"):
+            self.play(FadeIn(plane), GrowArrow(v.arrow), FadeIn(v.label))
+            self.play(Create(alpha.lines, lag_ratio=0.1), run_time=1.5)
+            self.play(GrowArrow(alpha.direction))
+            a_lbl = right_panel(tmath(COVEC, font_size=72), y=1.5)
+            self.play(Write(a_lbl))
+            self.caption(r"Picture a covector as a \textbf{stack of lines}, with a direction in which its value grows.")
 
         # alpha(v) = number of lines pierced
         k1 = Dot(plane.c2p(0.5, 1.5), color=COVECTOR_COLOR, radius=0.07)  # on line k=1
         k2 = Dot(plane.c2p(1, 3), color=COVECTOR_COLOR, radius=0.07)      # tip, on line k=2
-        self.play(FadeIn(k1, scale=0.5), FadeIn(k2, scale=0.5))
-        val = right_panel(tmath(COVEC, "(", VEC, ")", "= 2"), y=0.3)
-        self.play(Write(val))
-        self.caption(r"Feed it a vector, and you get a number: how many lines the arrow pierces. Here, 2.", wait=PAUSE_LONG)
+        with self.narrate("E00_07_b4"):
+            self.play(FadeIn(k1, scale=0.5), FadeIn(k2, scale=0.5))
+            val = right_panel(tmath(COVEC, "(", VEC, ")", "= 2"), y=0.3)
+            self.play(Write(val))
+            self.caption(r"Feed it a vector, and you get a number: how many lines the arrow pierces. Here, 2.", wait=PAUSE_LONG)
 
         # Dual basis
         self.play(FadeOut(VGroup(k1, k2, val)),
@@ -468,20 +529,24 @@ class E00_07_Covectors(Ep0Mixin, TensorScene):
         eps1 = covector_stack((1, 0), plane, color=DUAL_BASIS_COLOR, show_direction=False, region=region)
         eps2 = covector_stack((0, 1), plane, color=DUAL_BASIS_COLOR, show_direction=False, region=region)
         dual = right_panel(tmath(eps(1), ",", r"\quad", eps(2), font_size=60), y=0.3)
-        self.play(Create(eps1, lag_ratio=0.1), Write(dual))
-        self.caption(r"Covectors have their own basis, the \textbf{dual basis} $\epsilon^i$, with the index \emph{up}.")
-        self.play(ReplacementTransform(eps1, eps2), run_time=1.2)
-        self.caption(r"$\epsilon^1$ counts steps of $\mathbf{e}_1$, and $\epsilon^2$ counts steps of $\mathbf{e}_2$.")
+        with self.narrate("E00_07_b5"):
+            self.play(Create(eps1, lag_ratio=0.1), Write(dual))
+            self.caption(r"Covectors have their own basis, the \textbf{dual basis} $\epsilon^i$, with the index \emph{up}.")
+        with self.narrate("E00_07_b6"):
+            self.play(ReplacementTransform(eps1, eps2), run_time=1.2)
+            self.caption(r"$\epsilon^1$ counts steps of $\mathbf{e}_1$, and $\epsilon^2$ counts steps of $\mathbf{e}_2$.")
         self.play(FadeOut(eps2), alpha.lines.animate.set_stroke(opacity=1), alpha.direction.animate.set_opacity(1))
 
         expand = right_panel(tmath(COVEC, "=", cc(1), eps(1), "+", cc(2), eps(2)), y=0.3)
-        self.play(TransformMatchingTex(dual, expand))
-        self.caption(r"Components of a covector carry their index \emph{down}: $\alpha_i$. Exactly the reverse of vectors.")
-        short = right_panel(tmath(COVEC, "=", cc("i"), eps("i")), y=0.3)
-        self.play(TransformMatchingTex(expand, short))
+        with self.narrate("E00_07_b7"):
+            self.play(TransformMatchingTex(dual, expand))
+            self.caption(r"Components of a covector carry their index \emph{down}: $\alpha_i$. Exactly the reverse of vectors.")
+            short = right_panel(tmath(COVEC, "=", cc("i"), eps("i")), y=0.3)
+            self.play(TransformMatchingTex(expand, short))
         pair = right_panel(tmath(COVEC, "(", VEC, ")", "=", cc("i"), vc("i"), "= 2"), y=-0.9)
-        self.play(Write(pair))
-        self.caption(r"And one up, one down means a sum: $\alpha_i v^i = (-1)(1) + (1)(3) = 2$. It matches the picture.", wait=PAUSE_LONG)
+        with self.narrate("E00_07_b8"):
+            self.play(Write(pair))
+            self.caption(r"And one up, one down means a sum: $\alpha_i v^i = (-1)(1) + (1)(3) = 2$. It matches the picture.", wait=PAUSE_LONG)
         self.play(*[FadeOut(m) for m in self.mobjects])
         self.caption_mob = None
 
@@ -556,10 +621,11 @@ class E00_08_Recap(Ep0Mixin, TensorScene):
         content.next_to(head, DOWN, buff=0.35).set_x(0)
         n_rows = len(vec_side)
 
-        self.play(LaggedStart(*[FadeIn(VGroup(*col_a[3 * k:3 * k + 3], *col_b[3 * k:3 * k + 3]), shift=RIGHT * 0.2)
-                                for k in range(n_rows)], lag_ratio=0.3), run_time=3.5)
-        self.play(Create(hline), LaggedStart(*[FadeIn(r) for r in [*rule_txt, *rule_eqs]], lag_ratio=0.2), run_time=2.5)
-        self.beat(PAUSE_LONG * 2.5)
+        with self.narrate("E00_08_b1"):
+            self.play(LaggedStart(*[FadeIn(VGroup(*col_a[3 * k:3 * k + 3], *col_b[3 * k:3 * k + 3]), shift=RIGHT * 0.2)
+                                    for k in range(n_rows)], lag_ratio=0.3), run_time=3.5)
+            self.play(Create(hline), LaggedStart(*[FadeIn(r) for r in [*rule_txt, *rule_eqs]], lag_ratio=0.2), run_time=2.5)
+            self.beat(PAUSE_LONG * 2.5)
 
         self.play(*[FadeOut(m) for m in self.mobjects])
         teaser = VGroup(
@@ -567,7 +633,8 @@ class E00_08_Recap(Ep0Mixin, TensorScene):
             words(r"\textbf{Episode 1: What Is a Vector, Really?}", size=52),
         ).arrange(DOWN, buff=0.3)
         v = styled_vector((2, 1.2), label=None).move_to(DOWN * 1.6)
-        self.play(FadeIn(teaser, shift=UP * 0.2))
-        self.play(GrowArrow(v.arrow))
-        self.beat(PAUSE_LONG)
+        with self.narrate("E00_08_b2"):
+            self.play(FadeIn(teaser, shift=UP * 0.2))
+            self.play(GrowArrow(v.arrow))
+            self.beat(PAUSE_LONG)
         self.play(FadeOut(teaser), FadeOut(v))
