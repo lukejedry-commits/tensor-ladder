@@ -1,0 +1,19 @@
+# manim/TensorAlgebra/.gitignore
+
+# Secrets: ELEVENLABS_API_KEY lives here. Never commit it.
+.env
+
+# Manim render output (regenerate with `manim -ql ...`)
+media/
+
+# Generated narration audio (regenerate with `python voiceover.py episode00`).
+# Default: ignored. Tradeoff: committing audio/ (~8 MB per episode at 128 kbps)
+# means a fresh clone or Codespace renders the exact same takes without
+# spending credits, and old takes are versioned; ignoring it keeps the repo
+# small, but a new machine must regenerate (paid again, and v3 may read a line
+# slightly differently even with the same seed). If you want to keep takes,
+# delete the next line and commit audio/ including audio/*/manifest.json.
+audio/
+
+__pycache__/
+*.pyc
